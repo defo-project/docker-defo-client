@@ -1,0 +1,122 @@
+[
+  {
+    "description": "nginx server/minimal HTTPS RR",
+    "expected": "success",
+    "url": "https://min-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/nominal, HTTPS RR",
+    "expected": "success",
+    "url": "https://v1-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/nominal, HTTPS RR",
+    "expected": "success",
+    "url": "https://v2-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/two RRvals for nominal, minimal, HTTPS RR",
+    "expected": "success",
+    "url": "https://v3-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/three RRvals, 1st bad, 2nd good, 3rd bad, HTTPS RR",
+    "expected": "error",
+    "url": "https://v4-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/ECHConfigList with bad alg type (0xcccc) for ech kem",
+    "expected": "error",
+    "url": "https://bk1-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/zero-length ECHConfig within ECHConfigList",
+    "expected": "error",
+    "url": "https://bk2-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/ECHConfigList with bad ECH version (0xcccc)",
+    "expected": "error",
+    "url": "https://bv-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/nominal, HTTPS RR, bad alpn",
+    "expected": "client-dependent",
+    "url": "https://badalpn-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/20 values in HTTPS RR",
+    "expected": "success",
+    "url": "https://many-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/AliasMode (0) and ServiceMode (!=0) are not allowed together",
+    "expected": "error",
+    "url": "https://mixedmode-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/uses p256, hkdf-385 and chacha",
+    "expected": "success",
+    "url": "https://p256-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/two RRVALs one using x25519 and one with p256, same priority",
+    "expected": "success",
+    "url": "https://curves1-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/two RRVALs one using x25519 (priority=1) and one with p256 (priority=2)",
+    "expected": "success",
+    "url": "https://curves2-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/two RRVALs one using x25519 (priority=2) and one with p256 (priority=1)",
+    "expected": "success",
+    "url": "https://curves3-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/alpn is only h2",
+    "expected": "success",
+    "url": "https://h2alpn-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/alpn is only http/1.1",
+    "expected": "success",
+    "url": "https://h1alpn-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/alpn is http/1.1,foo,bar,bar,bom,h2",
+    "expected": "success",
+    "url": "https://mixedalpn-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/alpn is very long ending with http/1.1,h2",
+    "expected": "success",
+    "url": "https://longalpn-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/ECHConfiglist with 2 entries a 25519 one then a p256 one (both good keys)",
+    "expected": "success",
+    "url": "https://2thenp-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/ECHConfiglist with 2 entries a p256 one then a 25519 one (both good keys)",
+    "expected": "success",
+    "url": "https://pthen2-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server/minimal HTTPS RR but with 2 ECHConfig extensions",
+    "expected": "success",
+    "url": "https://withext-ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "nginx server",
+    "expected": "success",
+    "url": "https://ng.test.defo.ie/echstat.php?format=json"
+  },
+  {
+    "description": "apache server",
+    "expected": "success",
+    "url": "https://ap.test.defo.ie/echstat.php?format=json"
+  }
+]

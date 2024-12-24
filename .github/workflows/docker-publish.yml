@@ -1,0 +1,35 @@
+name: Docker Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: |
+        docker build -t defo-project/docker-defo-client:latest .
+    - name: Tag with commit sha
+      run: |
+        docker tag defo-project/docker-defo-client:latest defo-project/docker-defo-client:${{ github.sha }}
+
+    - name: Log in to GitHub Container Registry
+      if: github.event_name == 'push'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push to GitHub Container Registry
+      if: github.event_name == 'push'
+      run: |
+        docker push ghcr.io/defo-project/docker-defo-client:latest
+        docker push ghcr.io/defo-project/docker-defo-client:${{ github.sha }}
