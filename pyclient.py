@@ -89,7 +89,7 @@ def get_ech_configs(domain) -> List[bytes]:
     return configs
 
 def get_http(hostname, port, path, ech_configs) -> bytes:
-    logging.debug("Performing GET request for https://{hostname}:{port}/{path}")
+    logging.debug(f"Performing GET request for https://{hostname}:{port}/{path}")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.load_verify_locations(certifi.where())
     context.options |= ssl.OP_ECH_GREASE
