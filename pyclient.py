@@ -6,7 +6,7 @@ import socket
 import ssl
 import sys
 import urllib.parse
-from typing import List, TypedDict, NotRequired, Union
+from typing import List, TypedDict, NotRequired, Union, Tuple, Optional
 from urllib.parse import ParseResult
 
 import certifi
@@ -64,12 +64,12 @@ def svcbname(parsed: ParseResult):
         return None
 
 
-def get_ech_configs(domain) -> List[bytes]:
+def get_ech_configs(domain, follow_alias: bool = True) -> Tuple[Optional[str], List[bytes]]:
     try:
         answers = dns.resolver.resolve(domain, "HTTPS")
     except dns.resolver.NoAnswer:
         logging.warning(f"No HTTPS record found for {domain}")
-        return []
+        return None, []
     except Exception as e:
         logging.critical(f"DNS query failed: {e}")
         sys.exit(1)
@@ -78,12 +78,12 @@ def get_ech_configs(domain) -> List[bytes]:
 
     if len(answers) == 0:
         logging.warning(f"No echconfig found in HTTPS record for {domain}")
-        return []
+        return None, []
 
     answers.sort(key=lambda a: a.priority)
     if answers[0].priority == 0:
         logging.debug(f"HTTPS record using AliasMode (0). Looking instead at {answers[0].target}")
-        return get_ech_configs(answers[0].target)
+        return get_ech_configs(answers[0].target.to_text(True), False)
 
     configs = []
 
@@ -94,10 +94,10 @@ def get_ech_configs(domain) -> List[bytes]:
             if echconfig:
                 configs.append(echconfig.ech)
 
-    return configs
+    return None if follow_alias else domain, configs
 
-def get_http(hostname, port, path, ech_configs) -> bytes:
-    logging.debug(f"Performing GET request for https://{hostname}:{port}{path}")
+def access_origin(hostname, port, path='', ech_configs=None, enable_retry=True, target=None) -> bytes:
+    logging.debug(f"Accessing service providing https://{hostname}:{port}/")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.load_verify_locations(certifi.where())
     context.options |= ssl.OP_ECH_GREASE
@@ -106,41 +106,52 @@ def get_http(hostname, port, path, ech_configs) -> bytes:
             context.set_ech_config(config)
             context.check_hostname = False
         except ssl.SSLError as e:
-            logging.error(f"SSL error: {e}")
+            logging.error(f"SSL error for {hostname}:{port} -- {e}")
             pass
-    with socket.create_connection((hostname, port)) as sock:
+    logging.debug(f"Target is {target} and hostname is {hostname}:{port}")
+    with socket.create_connection((target or hostname, port)) as sock:
         with context.wrap_socket(sock, server_hostname=hostname, do_handshake_on_connect=False) as ssock:
             try:
                 ssock.do_handshake()
+                status = ssock.get_ech_status()
                 logging.debug("Handshake completed with ECH status: %s", ssock.get_ech_status().name)
                 logging.debug("Inner SNI: %s, Outer SNI: %s", ssock.server_hostname, ssock.outer_server_hostname)
             except ssl.SSLError as e:
-                retry_config = ssock._sslobj.get_ech_retry_config()
-                if retry_config:
-                    logging.debug("Received a retry config: %s", base64.b64encode(retry_config))
-                    return get_http(hostname, port, path, [retry_config])
-                logging.error(f"SSL error: {e}")
-            request = f'GET {path} HTTP/1.1\r\nHost: {hostname}\r\nConnection: close\r\n\r\n'
-            ssock.sendall(request.encode('utf-8'))
+                if enable_retry:
+                    retry_config = ssock._sslobj.get_ech_retry_config()
+                    if retry_config:
+                        logging.debug("Received a retry config: %s", base64.b64encode(retry_config))
+                        # return get_http(hostname, port, path, [retry_config])
+                        return access_origin(hostname, port, path, [retry_config], False, target)
+                logging.error(f"SSL error for {hostname}:{port} -- {e}")
+
             response = b''
-            while True:
-                data = ssock.recv(4096)
-                if not data:
-                    break
-                response += data
+            if path != None:
+                logging.debug(f"Performing GET request for https://{hostname}:{port}/{path}")
+                request = f'GET {path} HTTP/1.1\r\nHost: {hostname}\r\nConnection: close\r\n\r\n'
+                ssock.sendall(request.encode('utf-8'))
+                while True:
+                    data = ssock.recv(4096)
+                    if not data:
+                        break
+                    response += data
             return response
+
+
+def get_http(hostname, port, path, ech_configs, target) -> bytes:
+    return access_origin(hostname, port, path=path, ech_configs=ech_configs, target=target)
 
 
 def get(url: str, force_grease: bool):
     parsed = urllib.parse.urlparse(url)
     domain = parsed.hostname
     if force_grease:
-        ech_configs = []
+        target, ech_configs = None, []
     else:
-        ech_configs = get_ech_configs(svcbname(parsed))
+        target, ech_configs = get_ech_configs(svcbname(parsed))
     logging.debug("Discovered ECHConfig values: %s", [base64.b64encode(config) for config in ech_configs])
     request_path = (parsed.path or '/') + ('?' + parsed.query if parsed.query else '')
-    raw = get_http(domain, parsed.port or 443, request_path, ech_configs)
+    raw = get_http(domain, parsed.port or 443, request_path, ech_configs, target)
     return parse_http_response(raw)
 
 
