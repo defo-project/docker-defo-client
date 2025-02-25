@@ -97,7 +97,7 @@ def get_ech_configs(domain) -> List[bytes]:
     return configs
 
 def get_http(hostname, port, path, ech_configs) -> bytes:
-    logging.debug(f"Performing GET request for https://{hostname}:{port}/{path}")
+    logging.debug(f"Performing GET request for https://{hostname}:{port}{path}")
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.load_verify_locations(certifi.where())
     context.options |= ssl.OP_ECH_GREASE
@@ -131,19 +131,22 @@ def get_http(hostname, port, path, ech_configs) -> bytes:
             return response
 
 
-def get(url):
+def get(url: str, force_grease: bool):
     parsed = urllib.parse.urlparse(url)
     domain = parsed.hostname
-    ech_configs = get_ech_configs(svcbname(parsed))
+    if force_grease:
+        ech_configs = []
+    else:
+        ech_configs = get_ech_configs(svcbname(parsed))
     logging.debug("Discovered ECHConfig values: %s", [base64.b64encode(config) for config in ech_configs])
     request_path = (parsed.path or '/') + ('?' + parsed.query if parsed.query else '')
     raw = get_http(domain, parsed.port or 443, request_path, ech_configs)
     return parse_http_response(raw)
 
 
-def cmd_get(url: str) -> None:
+def cmd_get(url: str, force_grease: bool) -> None:
     """Retrieves data from a given URL."""
-    print(get(url))
+    print(get(url, force_grease))
 
 
 def cmd_echconfig(url: str) -> None:
@@ -222,6 +225,9 @@ def main() -> None:
 
     get_parser = subparsers.add_parser("get", help="Fetch a URL.")
     get_parser.add_argument("url", help="URL to fetch")
+    get_parser.add_argument(
+        "-g", "--force-grease", action="store_true", help="Force GREASE"
+    )
     get_parser.set_defaults(func=cmd_get)
 
     getlist_parser = subparsers.add_parser(
@@ -249,10 +255,10 @@ def main() -> None:
         return
 
     try:
-        args.func(args.url)
+        args.func(args.url, args.force_grease)
     except AttributeError as e:
         logging.critical(
-            f"Error: Subcommand '{args.command}' was called, but it requires no additional arguments: {e}"
+            f"Error: Subcommand '{args.command}' was called, but it requires additional arguments: {e}"
         )
 
 
