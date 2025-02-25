@@ -74,6 +74,17 @@ def get_ech_configs(domain) -> List[bytes]:
         logging.critical(f"DNS query failed: {e}")
         sys.exit(1)
 
+    answers = list(filter(lambda a: a.rdtype == 65, answers))
+
+    if len(answers) == 0:
+        logging.warning(f"No echconfig found in HTTPS record for {domain}")
+        return []
+
+    answers.sort(key=lambda a: a.priority)
+    if answers[0].priority == 0:
+        logging.debug(f"HTTPS record using AliasMode (0). Looking instead at {answers[0].target}")
+        return get_ech_configs(answers[0].target)
+
     configs = []
 
     for rdata in answers:
@@ -82,9 +93,6 @@ def get_ech_configs(domain) -> List[bytes]:
             echconfig = params.get(5)
             if echconfig:
                 configs.append(echconfig.ech)
-
-    if len(configs) == 0:
-        logging.warning(f"No echconfig found in HTTPS record for {domain}")
 
     return configs
 
