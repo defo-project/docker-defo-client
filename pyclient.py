@@ -163,7 +163,7 @@ def cmd_get(url: str, force_grease: bool) -> None:
 def cmd_echconfig(url: str) -> None:
     """Print the bas64-encoded ECHConfig values for a given URL."""
     parsed = urllib.parse.urlparse(url)
-    for config in get_ech_configs(svcbname(parsed)):
+    for config in get_ech_configs(svcbname(parsed))[1]:
         print(base64.b64encode(config).decode("utf-8"))
 
 
@@ -260,16 +260,16 @@ def main() -> None:
 
     logging.debug(f"Command line arguments: {args}")
 
-    if args.command is None:
-        parser.print_help()
-        return
-
-    if args.command == "getlist":
-        args.func(args.demo, args.force_grease)
-        return
-
     try:
-        args.func(args.url, args.force_grease)
+        match args.command:
+            case "get":
+                cmd_get(args.url, args.force_grease)
+            case "getlist":
+                cmd_getlist(args.demo, args.force_grease)
+            case "echconfig":
+                cmd_echconfig(args.url)
+            case _:
+                parser.print_help()
     except AttributeError as e:
         logging.critical(
             f"Error: Subcommand '{args.command}' was called, but it requires additional arguments: {e}"
