@@ -1,8 +1,8 @@
-FROM ubuntu:24.04
+FROM debian:testing
 
 # hadolint ignore=DL3008
 RUN mkdir -p /code && \
-    sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/ubuntu.sources && \
+    sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources && \
     apt-get update && apt-get install -y --no-install-recommends \
     git && \
     apt-get update && apt-get build-dep -y \
