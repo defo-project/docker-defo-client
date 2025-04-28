@@ -64,7 +64,7 @@ def svcbname(parsed: ParseResult):
         return None
 
 
-def get_ech_configs(domain, follow_alias: bool = True) -> Tuple[Optional[str], List[bytes]]:
+def get_ech_configs(domain: str, follow_alias: bool = True) -> Tuple[Optional[str], List[bytes]]:
     try:
         answers = dns.resolver.resolve(domain, "HTTPS")
     except dns.resolver.NoAnswer:
@@ -85,7 +85,7 @@ def get_ech_configs(domain, follow_alias: bool = True) -> Tuple[Optional[str], L
         logging.debug(f"HTTPS record using AliasMode (0). Looking instead at {answers[0].target}")
         return get_ech_configs(answers[0].target.to_text(True), False)
 
-    configs = []
+    configs: List[bytes] = []
 
     for rdata in answers:
         if hasattr(rdata, "params"):
