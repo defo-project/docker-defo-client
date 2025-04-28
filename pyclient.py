@@ -199,7 +199,7 @@ def read_targets_list() -> List[GetTarget]:
         sys.exit(1)
 
 
-def cmd_getlist(demo: bool) -> None:
+def cmd_getlist(demo: bool, force_grease: bool) -> None:
     targets: List[Union[GetTarget, str]]
     if demo:
         targets = json.load(open("targets.json"))
@@ -208,11 +208,11 @@ def cmd_getlist(demo: bool) -> None:
     for target in targets:
         logging.debug("--------------------------------------------------------")
         if isinstance(target, str):
-            cmd_get(target)
+            cmd_get(target, force_grease)
             continue
         logging.debug("Target description: %s", target["description"])
         logging.debug("Expected ECH status: %s", target["expected"])
-        cmd_get(target["url"])
+        cmd_get(target["url"], force_grease)
 
 
 def main() -> None:
@@ -244,6 +244,9 @@ def main() -> None:
     getlist_parser = subparsers.add_parser(
         "getlist", help="Iterate through a list of targets."
     )
+    getlist_parser.add_argument(
+        "-g", "--force-grease", action="store_true", help="Force GREASE"
+    )
     getlist_parser.add_argument("--demo", help="Use a set of demo targets.", action="store_true")
     getlist_parser.set_defaults(func=cmd_getlist)
 
@@ -262,7 +265,7 @@ def main() -> None:
         return
 
     if args.command == "getlist":
-        args.func(args.demo)
+        args.func(args.demo, args.force_grease)
         return
 
     try:
